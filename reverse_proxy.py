@@ -4,7 +4,7 @@ import time
 import os
 
 SERVER_IP = '52.22.11.146' 
-SERVER_PORT = 1234
+SERVER_PORT = 1235
 
 def connect_back():
     current_dir = os.getcwd()
