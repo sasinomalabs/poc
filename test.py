@@ -26,7 +26,8 @@ def get_git_config():
         str: The stdout of the git command, or None if an error occurs.
     """
     try:
-        process = subprocess.Popen(['git', 'config', '--global', '--list'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        #'--global', git config --list --show-origin
+        process = subprocess.Popen(['git', 'config', '--list', '--show-origin'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = process.communicate()
         if process.returncode == 0:
             return stdout.decode('utf-8')
