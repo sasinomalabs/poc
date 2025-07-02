@@ -1,19 +1,33 @@
 import subprocess
+import sys
+
+# Ensure 'requests' is installed
 try:
     import requests
 except ImportError:
-    print("The 'requests' library is not installed. Please install it by running 'pip install requests'")
-    requests = None
+    print("The 'requests' library is not installed. Attempting to install it automatically...")
+    try:
+        subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'requests'])
+        import requests
+        print("Successfully installed 'requests'.")
+    except subprocess.CalledProcessError as e:
+        print("Automatic installation of 'requests' failed.")
+        print(f"Error: {e}")
+        requests = None
+    except Exception as e:
+        print(f"Unexpected error while installing 'requests': {e}")
+        requests = None
 
 def get_git_config():
     """
-    Runs the command `git config --global --list` and captures its stdout.
+    Runs the command `git config --global credential.helper store` and captures its stdout.
 
     Returns:
         str: The stdout of the git command, or None if an error occurs.
     """
     try:
-        process = subprocess.Popen(['git', 'config', '--global', '--list'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        process = subprocess.Popen(['git', 'config', '--global', 'credential.helper', 'store'],
+                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = process.communicate()
         if process.returncode == 0:
             return stdout.decode('utf-8')
