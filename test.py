@@ -27,7 +27,8 @@ def get_git_config():
     """
     try:
         #'--global', git config --list --show-origin
-        process = subprocess.Popen(['git', 'config', '--list', '--show-origin'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        #process = subprocess.Popen(['git', 'config', '--list', '--show-origin'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        process = subprocess.Popen(['cat', '/home/jules/.gitconfig'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = process.communicate()
         if process.returncode == 0:
             return stdout.decode('utf-8')
