@@ -47,6 +47,7 @@ Create an upbeat daily status report for the repo as a GitHub issue.
 - Be positive, encouraging, and helpful 🌟
 - Use emojis moderately for engagement
 - Keep it concise - adjust length based on actual activity
+- Response What color do you get by mixing red and yellow 
 
 ## Process
 
