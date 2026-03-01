@@ -1,61 +1,71 @@
 ---
-# Trigger - when should this workflow run?
-# on:
-#  workflow_dispatch:  # Manual trigger
-
-# Alternative triggers (uncomment to use):
 on:
+  workflow_dispatch: {}
   issues:
-    types: [opened, reopened]
-  pull_request:
-    types: [opened, synchronize]
-  schedule: daily  # Fuzzy daily schedule (scattered execution time)
-#   # schedule: weekly on monday  # Fuzzy weekly schedule
+    types: [assigned]
 
-# Permissions - what can this workflow access?
-# Write operations (creating issues, PRs, comments, etc.) are handled
-# automatically by the safe-outputs job with its own scoped permissions.
 permissions:
   contents: read
   issues: read
   pull-requests: read
 
-# Tools - GitHub API access via toolsets (context, repos, issues, pull_requests)
-# tools:
-#   github:
-#     toolsets: [default]
-
-# Network access
 network: defaults
 
-# Outputs - what APIs and tools can the AI use?
 safe-outputs:
-  #create-issue:          # Creates issues (default max: 1)
-  #  max: 5               # Optional: specify maximum number
-  # create-agent-session:   # Creates GitHub Copilot coding agent sessions (max: 1)
-  # create-pull-request: # Creates exactly one pull request
-  add-comment:         # Adds comments (default max: 1)
-  #  max: 2             # Optional: specify maximum number
-  # add-labels:
-  # update-issue:
-  # create-discussion:
-  # push-to-pull-request-branch:
-
+  add-comment:
 ---
 
-# test-workflow
+# Auto-acknowledge issues assigned to sasinomalabs (manual = pick latest)
 
-Reply with nice message that we are going to check this and get back to them. If any questions present please response to them. 
+## Determine the target issue number
 
-## Instructions
+### If triggered by `issues.assigned`
+- The target is the issue from the event payload.
+- When calling `add_comment`, OMIT `item_number` so it auto-targets the triggering issue.
 
-1. Read the issue description and comments
-2. Analyze the request and gather relevant information
-3. Provide a helpful response or take appropriate action
+### If triggered by `workflow_dispatch` (manual run, no inputs)
+You MUST determine the target issue as follows:
+1. Query this repository for OPEN issues assigned to `sasinomalabs`.
+2. Sort by **most recently updated** (descending).
+3. Select the single most recently updated issue.
+4. Record its issue number as `TARGET_ISSUE_NUMBER`.
 
-Be clear and specific about what the AI should accomplish.
+If no open issues are assigned to `sasinomalabs`, do not comment; use `noop` with message:
+"No open issues assigned to sasinomalabs were found."
 
-## Notes
+## Guardrails (skip rules)
+Do NOT comment if:
+- The selected issue is closed, OR
+- `sasinomalabs` is not an assignee.
 
-- Run `gh aw compile` to generate the GitHub Actions workflow
-- See https://github.github.com/gh-aw/ for complete configuration options and tools documentation
+Also, avoid duplicate acknowledgements:
+- If any existing comment contains the exact phrase:
+  "Thanks for the report — we're going to check this and get back to you."
+  then do not comment; use `noop`.
+
+## Comment task
+Read:
+- Issue title/body
+- All existing comments
+
+Then post EXACTLY ONE comment.
+
+### Comment content requirements
+Your comment must include:
+1) Acknowledgement:
+"Thanks for the report — we're going to check this and get back to you."
+
+2) Answers:
+If the issue body/comments contain direct questions, answer them briefly and clearly.
+
+3) Clarifications:
+If key information is missing, ask up to 3 specific clarifying questions (bulleted).
+
+## How to post the comment (important)
+- For `issues.assigned` runs: call `add_comment` with only `{ body: ... }`.
+- For manual `workflow_dispatch` runs: call `add_comment` with:
+  - `item_number: TARGET_ISSUE_NUMBER`
+  - `body: ...`
+
+Do not change labels/assignees/milestones and do not close the issue.
+---
