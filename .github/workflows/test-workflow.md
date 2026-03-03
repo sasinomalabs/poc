@@ -13,6 +13,8 @@ network: defaults
 
 safe-outputs:
   add-comment:
+
+engine: claude
 ---
 
 # Auto-acknowledge issues assigned to sasinomalabs (manual = pick latest)
