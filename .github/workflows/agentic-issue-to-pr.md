@@ -1,6 +1,8 @@
 ---
 name: "Agentic: Issue to PR"
 on:
+  workflow_dispatch: {}
+  
   issues:
     types: [opened, labeled]
 strict: true
