@@ -1,0 +1,86 @@
+on:
+  issues:
+    types: [opened, labeled]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: read
+
+jobs:
+  issue_to_pr:
+    # Optionally gate this to only run when a specific label is present.
+    # If you only want "opened", remove the "labeled" event above and this if-condition.
+    if: >
+      github.event.action == 'opened' ||
+      (github.event.action == 'labeled' && github.event.label.name == 'agentic-pr')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Extract issue info
+        id: issue
+        run: |
+          echo "number=${{ github.event.issue.number }}" >> "$GITHUB_OUTPUT"
+          echo "title<<EOF" >> "$GITHUB_OUTPUT"
+          echo "${{ github.event.issue.title }}" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+          # Write the issue body to a file (safe for multiline)
+          cat > issue_body.md <<'EOF'
+          ${{ github.event.issue.body }}
+          EOF
+
+      - name: Create branch
+        id: branch
+        run: |
+          BRANCH="agentic/issue-${{ steps.issue.outputs.number }}"
+          echo "name=$BRANCH" >> "$GITHUB_OUTPUT"
+          git checkout -b "$BRANCH"
+
+      # ---- YOUR "AGENT" STEP GOES HERE ----
+      # This is intentionally a placeholder. You need *some* deterministic code-generation step:
+      # - run a script that edits files based on issue_body.md
+      # - run a codegen tool
+      # - call your own agent service, etc.
+      - name: Apply changes (placeholder)
+        run: |
+          mkdir -p agentic-output
+          cat > agentic-output/ISSUE-${{ steps.issue.outputs.number }}.md <<'EOF'
+          # Issue ${{ steps.issue.outputs.number }}: ${{ steps.issue.outputs.title }}
+
+          This file was generated from the issue body:
+
+          ---
+          EOF
+          cat issue_body.md >> agentic-output/ISSUE-${{ steps.issue.outputs.number }}.md
+
+      - name: Commit changes
+        run: |
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes produced; exiting without PR."
+            exit 0
+          fi
+          git commit -m "Agentic: address issue #${{ steps.issue.outputs.number }}"
+
+      - name: Push branch
+        run: |
+          git push --set-upstream origin "${{ steps.branch.outputs.name }}"
+
+      - name: Create PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create \
+            --title "Agentic: #${{ steps.issue.outputs.number }} - ${{ steps.issue.outputs.title }}" \
+            --body "Auto-generated PR for issue #${{ steps.issue.outputs.number }}.\n\nCloses #${{ steps.issue.outputs.number }}" \
+            --head "${{ steps.branch.outputs.name }}" \
+            --base "${{ github.event.repository.default_branch }}"
