@@ -28,7 +28,7 @@ engine: claude
 ### If triggered by `workflow_dispatch` (manual run, no inputs)
 You MUST determine the target issue as follows:
 1. Query this repository for OPEN issues assigned to `sasinomalabs`.
-2. Sort by **most recently updated** (descending).
+2. Sort by **most recently updated** (descending) and work on the last issue.
 3. Select the single most recently updated issue.
 4. Record its issue number as `TARGET_ISSUE_NUMBER`.
 
