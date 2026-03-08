@@ -23,7 +23,7 @@ engine: claude
 
 ### If triggered by `issues.assigned`
 - The target is the issue from the event payload.
-- When calling `add_comment`, OMIT `item_number` so it auto-targets the triggering issue.
+- When calling `add-comment`, OMIT `item_number` so it auto-targets the triggering issue.
 
 ### If triggered by `workflow_dispatch` (manual run, no inputs)
 You MUST determine the target issue as follows:
@@ -58,14 +58,14 @@ Your comment must include:
 "Thanks for the report — we're going to check this and get back to you."
 
 2) Answers:
-If the issue body/comments contain direct questions, answer them briefly and clearly.
+If the issue body contains questions, answer them briefly and clearly.
 
 3) Clarifications:
 If key information is missing, ask up to 3 specific clarifying questions (bulleted).
 
 ## How to post the comment (important)
-- For `issues.assigned` runs: call `add_comment` with only `{ body: ... }`.
-- For manual `workflow_dispatch` runs: call `add_comment` with:
+- For `issues.assigned` runs: call `add-comment` with only `{ body: ... }`.
+- For manual `workflow_dispatch` runs: call `add-comment` with:
   - `item_number: TARGET_ISSUE_NUMBER`
   - `body: ...`
 
