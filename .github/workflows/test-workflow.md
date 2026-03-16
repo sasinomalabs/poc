@@ -22,7 +22,7 @@ engine:
     id: claude
   provider:
     id: claude
-    model: Opus 4.6
+    model: claude-opus-4-6
 ---
 
 # Auto-acknowledge issues assigned to sasinomalabs (manual = pick latest)
