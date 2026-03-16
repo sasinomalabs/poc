@@ -17,12 +17,14 @@ network: defaults
 safe-outputs:
   add-comment:
 
-engine:
-  runtime:
-    id: claude
-  provider:
-    id: claude
-    model: claude-opus-4-6
+engine: copilot
+
+#engine: 
+#  runtime:
+#    id: claude
+#  provider:
+#    id: claude
+#    model: claude-opus-4-6
 ---
 
 # Auto-acknowledge issues assigned to sasinomalabs (manual = pick latest)
