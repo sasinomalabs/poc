@@ -4,6 +4,9 @@ on:
   issues:
     types: [assigned]
 
+description:
+  This workflow runs on new issues and the intend of it is to response to them.
+
 permissions:
   contents: read
   issues: read
@@ -14,7 +17,12 @@ network: defaults
 safe-outputs:
   add-comment:
 
-engine: claude
+engine:
+  runtime:
+    id: claude
+  provider:
+    id: claude
+    model: Opus 4.6
 ---
 
 # Auto-acknowledge issues assigned to sasinomalabs (manual = pick latest)
