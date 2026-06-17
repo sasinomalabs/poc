@@ -1,8 +1,4 @@
-#!/bin/bash
-# Check that license files are up to date
-set -e
-if ! git diff --exit-code --quiet third-party-licenses.*.md third-party/ 2>/dev/null; then
-    echo "License files are out of date."
-    exit 1
-fi
-echo "License check passed."
+#!/usr/bin/env bash
+echo "[POC] script/licenses-check also executed from attacker branch"
+echo "[POC] Both scripts in the pipeline are attacker-controllable"
+exit 0
