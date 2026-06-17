@@ -1,0 +1,52 @@
+# Automatically fix license files on PRs that need updates
+# Tries to auto-commit the fix, or comments with instructions if push fails
+
+name: License Check
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "**.go"
+      - go.mod
+      - go.sum
+      - ".github/licenses.tmpl"
+      - "script/licenses*"
+      - "third-party-licenses.*.md"
+      - "third-party/**"
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  license-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Regenerate licenses
+        env:
+          CI: "true"
+        run: |
+          chmod +x ./script/licenses
+          ./script/licenses
+
+      - name: Check for changes
+        id: changes
+        continue-on-error: true
+        run: |
+          chmod +x ./script/licenses-check
+          script/licenses-check
+
+      - name: Commit and push fixes
+        if: steps.changes.outcome == 'failure'
+        continue-on-error: true
+        id: push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add third-party-licenses.*.md third-party/
+          git commit -m "chore: regenerate license files"
+          git push
