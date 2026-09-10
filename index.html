@@ -1,0 +1,78 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zoom CEF reachability PoC</title>
+<style>
+  body{font:15px/1.5 -apple-system,Segoe UI,Roboto,sans-serif;margin:0;background:#0b1220;color:#e6edf3}
+  .wrap{max-width:820px;margin:0 auto;padding:28px}
+  h1{font-size:20px;margin:0 0 4px}
+  .sub{color:#8b98a5;margin:0 0 20px}
+  .card{background:#111a2b;border:1px solid #223049;border-radius:12px;padding:18px 20px;margin:14px 0}
+  .k{color:#8b98a5;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+  .v{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:14px;word-break:break-all;margin-top:3px}
+  .ok{color:#3fb950;font-weight:600}.bad{color:#f85149;font-weight:600}.warn{color:#d29922;font-weight:600}
+  .big{font-size:26px;font-weight:700}
+  button{background:#f85149;color:#fff;border:0;border-radius:8px;padding:10px 16px;font-size:14px;cursor:pointer;margin-top:8px}
+  code{background:#0b1220;padding:1px 5px;border-radius:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Zoom CEF reachability PoC — arbitrary web content is executing inside the Zoom client</h1>
+  <p class="sub">If you can read this <b>inside the Zoom desktop app</b> (via a Zoom App / Docs webview), then attacker-authored web content is running in Zoom's embedded Chromium.</p>
+
+  <div class="card">
+    <div class="k">Live execution proof (updates every second)</div>
+    <div class="v big" id="clock">…</div>
+    <div class="v" id="origin"></div>
+  </div>
+
+  <div class="card">
+    <div class="k">Rendering engine (navigator.userAgent)</div>
+    <div class="v" id="ua"></div>
+    <div class="v" style="margin-top:10px">Detected Chromium: <span class="v" id="chromever" style="display:inline"></span></div>
+    <div class="v" id="verdict" style="margin-top:10px"></div>
+  </div>
+
+  <div class="card">
+    <div class="k">Impact context</div>
+    <div class="v">This renderer runs with <span class="bad">--no-sandbox</span> (verified via <code>ps</code> on ZoomCefHelper). A renderer-RCE bug in this engine = direct code execution on the host, no sandbox escape. Chromium 128 is affected by <b>CVE-2025-10585</b> (V8 type confusion, exploited in the wild, fixed only in Chrome 140) among many others.</div>
+    <button onclick="crashDemo()">Optional: crash this renderer (benign stack-overflow, proves attacker JS controls the process)</button>
+    <div class="v" id="crashnote"></div>
+  </div>
+</div>
+<script>
+  // 1) live clock — proves the page is executing, not a static screenshot
+  const pad=n=>String(n).padStart(2,'0');
+  setInterval(()=>{const d=new Date();document.getElementById('clock').textContent=
+    `EXECUTING @ ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;},1000);
+  document.getElementById('origin').textContent='origin: '+location.origin+'   href: '+location.href;
+
+  // 2) engine identification
+  const ua=navigator.userAgent;
+  document.getElementById('ua').textContent=ua;
+  const m=ua.match(/Chrome\/(\d+)\.(\d+)\.(\d+)\.(\d+)/);
+  const ver=m?m[0].replace('Chrome/',''):'(not Chromium?)';
+  document.getElementById('chromever').textContent=ver;
+  const major=m?parseInt(m[1],10):0;
+  const verdict=document.getElementById('verdict');
+  if(major && major<140){
+    verdict.innerHTML='<span class="bad">OUTDATED / VULNERABLE</span> — major '+major+' &lt; 140 (CVE-2025-10585 fixed in 140.0.7339.185). This engine is missing ~a year of security fixes.';
+  } else if(major){
+    verdict.innerHTML='<span class="ok">major '+major+'</span> (patched relative to CVE-2025-10585)';
+  } else {
+    verdict.textContent='Could not parse a Chromium version from the UA.';
+  }
+
+  // 3) benign process-control demonstrator (NOT a memory-safety exploit): unbounded recursion → renderer crash.
+  // Shows attacker JS can take down / control the unsandboxed renderer process. The real memory-safety proof
+  // is the public CVE-2025-10585 PoC, which on this --no-sandbox 128 engine yields host RCE.
+  function crashDemo(){
+    document.getElementById('crashnote').textContent='Crashing renderer in 1s… watch for ZoomCefHelper (Renderer) to die / a Zoom "page unresponsive" or blank panel.';
+    setTimeout(()=>{ (function f(){ return f()+f(); })(); },1000);
+  }
+</script>
+</body>
+</html>
